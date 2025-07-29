@@ -2,7 +2,8 @@
 #include <stdlib.h>
 #include <windows.h>
 #include <time.h>
-extern void mainG();
+extern void mainG(const float* x1, const float* x2, const float* y1, const float* y2, float* z, int n);
+void kernelInC(const float* x1, const float* x2, const float* y1, const float* y2, float* z, int n);
 
 int main(int argc, char *argv[]) {
 	int n = 1 << 25; //this part is where you manually set the number of iterations to be made (currently 2^25)
@@ -25,21 +26,23 @@ int main(int argc, char *argv[]) {
 
 	int runs = 30;
 	double totalTime = 0.0;
-
+	
 	for (int i = 0; i < runs; i++) {
+		// C version
 		clock_t start = clock();
-
-
 		kernelInC(x1, x2, y1, y2, z, n);
-
-		for (int j = 0; j < 5; j++) {
-			printf("\nz[%d] = %f\n", j, z[j]);
-		}
 		clock_t end = clock();
-		totalTime += (double)(end - start) / CLOCKS_PER_SEC;
-		printf("%d %f", i+1, totalTime / runs);
+		double c_time = (double)(end - start) / CLOCKS_PER_SEC;
+
+		// ASM version
+		start = clock();
+		mainG(x1, x2, y1, y2, z, n);
+		end = clock();
+		double asm_time = (double)(end - start) / CLOCKS_PER_SEC;
+
+		printf("Run %d: C=%f sec, ASM=%f sec, Speedup=%fx\n",
+			i + 1, c_time, asm_time, c_time / asm_time);
 	}
-	//printf("HELLO VS CODE");
-	mainG();
+
 	return 0;
 }
